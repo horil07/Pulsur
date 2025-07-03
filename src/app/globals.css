@@ -1,0 +1,353 @@
+@import "tailwindcss";
+
+:root {
+  /* Cyberpunk Color Palette */
+  --neon-pink: #FF006F;
+  --electric-blue: #00E5FF;
+  --cyber-black: #0A0A0A;
+  --dark-gray: #1A1A1A;
+  --text-primary: #FFFFFF;
+  --text-secondary: #FFFFFF;
+  --glass-bg: rgba(26, 26, 26, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Legacy variables for compatibility */
+  --background: var(--cyber-black);
+  --foreground: var(--text-primary);
+}
+
+/* Global Cyberpunk Styles */
+body {
+  background: linear-gradient(135deg, var(--cyber-black) 0%, var(--dark-gray) 100%);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+}
+
+/* Neon Glow Effects */
+.neon-glow-pink {
+  box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink), 0 0 30px var(--neon-pink);
+}
+
+.neon-glow-blue {
+  box-shadow: 0 0 10px var(--electric-blue), 0 0 20px var(--electric-blue), 0 0 30px var(--electric-blue);
+}
+
+/* Glassmorphism Effects */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+/* Cyber Card Shadows */
+.cyber-shadow {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(255, 0, 111, 0.1);
+}
+
+/* Neon Text Effects */
+.neon-text-pink {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink);
+}
+
+.neon-text-blue {
+  color: var(--electric-blue);
+  text-shadow: 0 0 10px var(--electric-blue);
+}
+
+/* Cyber Button Base */
+.cyber-button {
+  background: linear-gradient(135deg, var(--neon-pink), #ff1a7a);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px var(--neon-pink);
+}
+
+.cyber-button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.cyber-button:hover:before {
+  left: 100%;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-pink), var(--electric-blue));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff1a7a, #1ae6ff);
+}
+
+/* Text Clamp Utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* Pulsar Theme Additions */
+
+/* Gradient Border Effect */
+.gradient-border {
+  background: linear-gradient(135deg, #ef4444, #3b82f6);
+  padding: 2px;
+  border-radius: 1.5rem;
+}
+
+.gradient-border > * {
+  background: #000;
+  border-radius: calc(1.5rem - 2px);
+}
+
+/* Pulse Animation for CTA buttons */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Slide animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Bike theme specific styles */
+.bike-hero-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(239, 68, 68, 0.1) 50%,
+    rgba(59, 130, 246, 0.1) 100%
+  );
+}
+
+/* Enhanced button hover effects */
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Card hover effects */
+.card-hover:hover {
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
+/* Challenge card specific styles */
+.challenge-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.challenge-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(239, 68, 68, 0.1),
+    transparent
+  );
+  transition: left 0.6s;
+}
+
+.challenge-card:hover::before {
+  left: 100%;
+}
+
+/* Additional Bike Theme Enhancements */
+
+/* Bike trail animation */
+.bike-trail {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(239, 68, 68, 0.3) 30%, 
+    rgba(59, 130, 246, 0.3) 70%, 
+    transparent 100%);
+  height: 2px;
+  animation: trail-move 3s ease-in-out infinite;
+}
+
+@keyframes trail-move {
+  0%, 100% { transform: translateX(-100%); opacity: 0; }
+  50% { transform: translateX(100%); opacity: 1; }
+}
+
+/* Enhanced glass panel for gallery cards */
+.glass-panel {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  border-radius: 12px;
+}
+
+.glass-panel:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(239, 68, 68, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Speed-inspired button animations */
+.pulsar-button {
+  position: relative;
+  background: linear-gradient(135deg, #ef4444, #3b82f6);
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.pulsar-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.pulsar-button:hover::before {
+  left: 100%;
+}
+
+.pulsar-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+}
+
+/* Bike-themed decorative overlays */
+.bike-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.bike-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(239, 68, 68, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Mobile Safe Area Utilities */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .h-safe {
+    height: env(safe-area-inset-bottom);
+  }
+  
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mobile Bottom Navigation Enhancements */
+.mobile-nav-blur {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}

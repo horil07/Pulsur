@@ -1,0 +1,502 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?   @unique // Optional but unique if provided
+  mobile    String?   @unique // Mobile number as primary identifier
+  name      String?
+  image     String?
+  provider  String   // google, facebook, email, mobile
+  providerId String?
+  emailVerified DateTime?
+  mobileVerified DateTime? // Mobile verification timestamp
+  profileComplete Boolean @default(false)
+  bio       String?
+  preferences Json?    // Store user preferences as JSON
+  trafficSource String? // organic, campaign, self-discovery, social, direct
+  trafficMedium String? // medium from UTM or referrer analysis
+  trafficCampaign String? // campaign from UTM
+  trafficReferrer String? // original referrer URL
+  referralCode String?
+  lastLoginAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  submissions Submission[]
+  votes      Vote[]
+  sessions   Session[]
+  accounts   Account[]
+  otpVerifications OtpVerification[]
+  tutorialProgress ChallengeTutorialProgress[]
+  submissionDrafts SubmissionDraft[]
+  submissionAnalytics SubmissionAnalytics[]
+  contentModifications ContentModification[]
+  
+  @@map("users")
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  userId      String
+  challengeId String?  // Optional challenge association
+  type        SubmissionType
+  title       String
+  caption     String?
+  contentUrl  String   // URL to uploaded file or AI-generated content
+  prompt      String?  // For AI-generated content
+  status      SubmissionStatus @default(PENDING)
+  voteCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  moderatedAt DateTime? // When the submission was approved/rejected
+  
+  // R41: Content Versioning and AI Modification
+  version     Int      @default(1) // Current version number
+  isLatest    Boolean  @default(true) // Whether this is the latest version
+  parentId    String?  // Parent submission for versioning
+  originalPrompt String? // Original prompt before any modifications
+  modificationHistory Json? // Track all modifications made
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge   Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  votes       Vote[]
+  
+  // R40: Inspiration Relations
+  inspirationSources  InspirationLink[] @relation("InspiredSubmission")
+  inspirationTargets  InspirationLink[] @relation("SourceInspiration")
+  inspirationMetadata InspirationMetadata?
+  
+  // R41: Version Relations
+  parent          Submission? @relation("SubmissionVersions", fields: [parentId], references: [id])
+  versions        Submission[] @relation("SubmissionVersions")
+  modifications   ContentModification[]
+  
+  @@map("submissions")
+}
+
+model Vote {
+  id           String   @id @default(cuid())
+  userId       String
+  submissionId String
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, submissionId])
+  @@map("votes")
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("campaigns")
+}
+
+model Challenge {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  objective       String?  // Main objective/goal of the challenge
+  assignment      String?  // Detailed assignment description
+  category        String
+  image           String?  // Challenge hero image
+  status          ChallengeStatus @default(DRAFT)
+  startDate       DateTime
+  endDate         DateTime
+  winnersAnnounceDate DateTime?
+  
+  // Entry management
+  maxEntriesPerUser Int @default(3) // R28 - Entry limits
+  currentParticipants Int @default(0)
+  
+  // Prize and rewards
+  prizes          Json?    // Array of prize details
+  topPrize        String?  // Main prize display text
+  
+  // Tutorial and onboarding
+  tutorialEnabled Boolean @default(true)
+  tutorialSteps   Json?    // Tutorial step configuration
+  onboardingFlow  Json?    // Onboarding flow configuration
+  
+  // Assets and resources
+  hasToolkitAssets Boolean @default(false)
+  toolkitAssets   Json?    // Downloadable assets configuration
+  deliverables    Json?    // Required deliverables
+  attachments     Json?    // Additional attachments
+  
+  // Validation rules
+  validationRules Json?    // Content validation rules per challenge
+  contentRequirements Json? // Specific content requirements
+  
+  // Metadata
+  createdBy       String?  // Admin who created the challenge
+  isActive        Boolean  @default(true)
+  isFeatured      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  submissions     Submission[]
+  tutorialProgress ChallengeTutorialProgress[]
+  submissionDrafts SubmissionDraft[]
+  submissionAnalytics SubmissionAnalytics[]
+  
+  @@map("challenges")
+}
+
+model ChallengeTutorialProgress {
+  id            String   @id @default(cuid())
+  userId        String
+  challengeId   String
+  currentStep   Int      @default(0)
+  totalSteps    Int
+  completed     Boolean  @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, challengeId])
+  @@map("challenge_tutorial_progress")
+}
+
+model SubmissionDraft {
+  id              String   @id @default(cuid())
+  userId          String
+  challengeId     String?  // Optional challenge association
+  draftName       String?  // User-friendly name for draft
+  type            SubmissionType
+  title           String?
+  caption         String?
+  contentUrl      String?
+  prompt          String?
+  metadata        Json?    // Additional draft metadata
+  progress        Json?    // Journey progress data
+  step            Int      @default(1) // Current creation step
+  totalSteps      Int      @default(1)
+  isCompleted     Boolean  @default(false)
+  contentMethod   String?  // 'ai-generation' or 'manual-upload'
+  
+  // Analytics tracking
+  timeSpent       Int      @default(0) // Total time spent in seconds
+  stepsCompleted  Json?    // Array of completed step IDs
+  lastStepReached String?  // Last step user reached
+  abandonedAt     String?  // Step where user abandoned (if any)
+  conversionData  Json?    // Conversion tracking data
+  
+  // Auto-save functionality
+  autoSavedAt     DateTime?
+  autoSaveEnabled Boolean  @default(true)
+  autoSaveInterval Int     @default(30) // Auto-save interval in seconds
+  
+  // State management
+  isActive        Boolean  @default(true) // Is this the active draft for this challenge
+  version         Int      @default(1) // Draft version for conflict resolution
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  
+  @@unique([userId, challengeId])
+  @@index([userId, isActive])
+  @@index([userId, challengeId, isActive])
+  @@map("submission_drafts")
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Analytics and tracking models
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String?
+  sessionId   String   @unique
+  ipAddress   String?
+  userAgent   String?
+  deviceType  String?  // mobile, tablet, desktop
+  trafficSource String?
+  trafficMedium String?
+  trafficCampaign String?
+  referrer    String?
+  utmParams   String?  // JSON string of UTM parameters
+  landingPage String?
+  country     String?
+  device      String?
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_sessions")
+}
+
+model Analytics {
+  id          String   @id @default(cuid())
+  event       String   // registration, login, submission, vote, share
+  userId      String?
+  sessionId   String?
+  metadata    Json?    // Additional event data
+  createdAt   DateTime @default(now())
+
+  @@map("analytics")
+}
+
+model SocialShare {
+  id          String   @id @default(cuid())
+  userId      String
+  submissionId String?
+  platform    String   // facebook, twitter, instagram, linkedin
+  shareUrl    String
+  createdAt   DateTime @default(now())
+
+  @@map("social_shares")
+}
+
+model OtpVerification {
+  id          String   @id @default(cuid())
+  userId      String?  // Optional - for guest OTP verification
+  mobile      String   // Mobile number for OTP
+  otp         String   // Encrypted OTP code
+  purpose     OtpPurpose // What the OTP is for
+  attempts    Int      @default(0) // Number of verification attempts
+  maxAttempts Int      @default(3) // Maximum allowed attempts
+  expiresAt   DateTime // OTP expiration time
+  verifiedAt  DateTime? // When OTP was successfully verified
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("otp_verifications")
+}
+
+model SubmissionAnalytics {
+  id              String   @id @default(cuid())
+  userId          String
+  challengeId     String?
+  submissionId    String?  // If draft converted to submission
+  draftId         String?  // Associated draft
+  
+  // Journey tracking
+  journeyStarted  DateTime @default(now())
+  journeyCompleted DateTime?
+  journeyAbandoned DateTime?
+  totalTimeSpent  Int      @default(0) // Total time in seconds
+  
+  // Step analytics
+  stepsData       Json?    // Detailed step-by-step analytics
+  currentStep     String?
+  maxStepReached  String?
+  stepTransitions Json?    // Track step navigation patterns
+  
+  // Content method analytics
+  contentMethod   String?  // 'ai-generation' or 'manual-upload'
+  methodSwitches  Int      @default(0) // Times user switched methods
+  
+  // Engagement metrics
+  saveCount       Int      @default(0) // Number of times user saved progress
+  loadCount       Int      @default(0) // Number of times user loaded progress
+  regenerateCount Int      @default(0) // Number of AI regenerations
+  editCount       Int      @default(0) // Number of edits made
+  previewCount    Int      @default(0) // Number of previews requested
+  
+  // Conversion tracking
+  conversionRate  Float?   // Calculated conversion score
+  qualityScore    Float?   // Content quality assessment
+  completed       Boolean  @default(false)
+  submitted       Boolean  @default(false)
+  
+  // Device and context
+  deviceType      String?  // mobile, desktop, tablet
+  browserType     String?  // chrome, safari, firefox
+  sessionId       String?  // Track session continuity
+  trafficSource   String?  // How user arrived
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  
+  @@index([userId, challengeId])
+  @@index([challengeId, completed])
+  @@index([contentMethod, completed])
+  @@map("submission_analytics")
+}
+
+model ContentModification {
+  id              String   @id @default(cuid())
+  submissionId    String
+  userId          String
+  modificationType ModificationType
+  
+  // Modification details
+  originalPrompt  String?  // Original prompt before modification
+  newPrompt       String?  // New prompt after modification
+  aiEffects       Json?    // Applied AI effects configuration
+  parameters      Json?    // Modification parameters and settings
+  
+  // Results
+  resultUrl       String?  // URL to modified content
+  previewUrl      String?  // URL to preview/thumbnail
+  processingStatus ProcessingStatus @default(PENDING)
+  errorMessage    String?  // Error details if processing failed
+  
+  // Metadata
+  isApplied       Boolean  @default(false) // Whether this modification is applied to main submission
+  appliedAt       DateTime? // When the modification was applied
+  processingTime  Int?     // Processing time in milliseconds
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  submission      Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([submissionId, isApplied])
+  @@index([userId, createdAt])
+  @@map("content_modifications")
+}
+
+model InspirationLink {
+  id              String   @id @default(cuid())
+  sourceId        String   // Original submission ID
+  inspiredId      String   // New submission inspired by source
+  inspirationType String   // "similar", "remix", "inspired"
+  attributionText String?  // Custom attribution text
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  source          Submission @relation("SourceInspiration", fields: [sourceId], references: [id], onDelete: Cascade)
+  inspired        Submission @relation("InspiredSubmission", fields: [inspiredId], references: [id], onDelete: Cascade)
+  
+  @@unique([sourceId, inspiredId])
+  @@map("inspiration_links")
+}
+
+model InspirationMetadata {
+  id              String   @id @default(cuid())
+  submissionId    String   @unique
+  allowRemixing   Boolean  @default(true)
+  inspirationData Json?    // Extracted features for inspiration
+  remixCount      Int      @default(0) // How many times this was used as inspiration
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  submission      Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  @@map("inspiration_metadata")
+}
+
+enum SubmissionType {
+  UPLOAD_REEL
+  UPLOAD_ARTWORK
+  AI_ARTWORK
+  AI_SONG
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ChallengeStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  JUDGING
+  WINNERS_ANNOUNCED
+}
+
+enum OtpPurpose {
+  REGISTRATION
+  LOGIN
+  PASSWORD_RESET
+  MOBILE_VERIFICATION
+}
+
+enum ModificationType {
+  PROMPT_MODIFICATION
+  AI_EFFECTS_ENHANCEMENT
+  STYLE_TRANSFER
+  CONTENT_REGENERATION
+  QUALITY_ENHANCEMENT
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}

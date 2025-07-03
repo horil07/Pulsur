@@ -1,0 +1,285 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+
+// Simple admin check
+const isAdmin = (email: string) => {
+  return email === 'testuser@example.com' || email.includes('admin')
+}
+
+interface ChallengeData {
+  id: string
+  title: string
+  description: string
+  image: string
+  topPrize: string
+  status: 'DRAFT' | 'OPEN' | 'CLOSED' | 'ANNOUNCED' | 'WINNERS_ANNOUNCED'
+  participants: number
+  startDate: string
+  endDate: string
+  winnersAnnouncedDate?: string
+  category: string
+  assignment: string
+  prizing: string[]
+  objective: string
+  deliverables: string[]
+  attachments: string[]
+  createdAt: string
+}
+
+// Mock challenge data - in production this would come from a database
+let challenges: ChallengeData[] = [
+  {
+    id: '1',
+    title: 'Digital Dreams',
+    description: 'Create stunning digital artwork that captures the essence of cyberpunk aesthetics',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400',
+    topPrize: '$2,500',
+    status: 'OPEN',
+    participants: 234,
+    startDate: '2024-11-01',
+    endDate: '2024-12-31',
+    category: 'AI Artwork',
+    assignment: 'Create stunning digital artwork that captures the essence of cyberpunk aesthetics with a holiday twist',
+    prizing: ['1st Place: $2,500', '2nd Place: $1,000', '3rd Place: $500'],
+    objective: 'Showcase creative AI artwork capabilities',
+    deliverables: ['High-res digital artwork', 'Creative description'],
+    attachments: ['Style Guide PDF'],
+    createdAt: '2024-11-01T10:00:00Z'
+  },
+  {
+    id: '2',
+    title: 'Neon Synthwave',
+    description: 'Compose original synthwave music with AI assistance',
+    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
+    topPrize: '$1,800',
+    status: 'OPEN',
+    participants: 156,
+    startDate: '2024-10-15',
+    endDate: '2024-12-25',
+    category: 'AI Music',
+    assignment: 'Create an original synthwave track that captures the nostalgic feel of the 80s',
+    prizing: ['1st Place: $1,800', '2nd Place: $900', '3rd Place: $300'],
+    objective: 'Produce high-quality synthwave compositions',
+    deliverables: ['Complete track (3+ minutes)', 'Audio file (WAV/FLAC)'],
+    attachments: ['Music Style Guide'],
+    createdAt: '2024-10-15T14:00:00Z'
+  },
+  {
+    id: '3',
+    title: 'Future Visions',
+    description: 'Design concepts for the future of technology and society',
+    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400',
+    topPrize: '$3,000',
+    status: 'ANNOUNCED',
+    participants: 0,
+    startDate: '2024-12-20',
+    endDate: '2025-01-15',
+    category: 'Design',
+    assignment: 'Design conceptual artwork for future technology and society',
+    prizing: ['1st Place: $3,000', '2nd Place: $1,500', '3rd Place: $750'],
+    objective: 'Conceptual design work',
+    deliverables: ['Design mockups', 'Concept explanation'],
+    attachments: ['Design Brief'],
+    createdAt: '2024-11-20T12:00:00Z'
+  }
+]
+
+// GET - Fetch challenges
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+    const search = searchParams.get('search')
+    const category = searchParams.get('category')
+    const id = searchParams.get('id')
+
+    // If fetching single challenge
+    if (id) {
+      const challenge = challenges.find(c => c.id === id)
+      if (!challenge) {
+        return NextResponse.json(
+          { success: false, error: 'Challenge not found' },
+          { status: 404 }
+        )
+      }
+      return NextResponse.json({ success: true, challenge })
+    }
+
+    // Filter challenges
+    let filteredChallenges = challenges
+
+    if (status && status !== 'ALL') {
+      filteredChallenges = filteredChallenges.filter(c => c.status === status)
+    }
+
+    if (search) {
+      filteredChallenges = filteredChallenges.filter(c => 
+        c.title.toLowerCase().includes(search.toLowerCase()) ||
+        c.description.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    if (category) {
+      filteredChallenges = filteredChallenges.filter(c => c.category === category)
+    }
+
+    return NextResponse.json({
+      success: true,
+      challenges: filteredChallenges
+    })
+  } catch (error) {
+    console.error('Failed to fetch challenges:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch challenges' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Create new challenge (Admin only)
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.email || !isAdmin(session.user.email)) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
+
+    const challengeData = await request.json()
+    
+    // Validation
+    if (!challengeData.title || !challengeData.description || !challengeData.topPrize) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    const newChallenge: ChallengeData = {
+      id: Date.now().toString(),
+      ...challengeData,
+      participants: 0,
+      createdAt: new Date().toISOString(),
+      prizing: challengeData.prizing?.filter((p: string) => p.trim() !== '') || [],
+      deliverables: challengeData.deliverables?.filter((d: string) => d.trim() !== '') || [],
+      attachments: challengeData.attachments?.filter((a: string) => a.trim() !== '') || []
+    }
+
+    // Add to challenges array
+    challenges.unshift(newChallenge)
+
+    return NextResponse.json({
+      success: true,
+      challenge: newChallenge
+    })
+  } catch (error) {
+    console.error('Failed to create challenge:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to create challenge' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH - Update existing challenge (Admin only)
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.email || !isAdmin(session.user.email)) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
+
+    const { id, ...updateData } = await request.json()
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Challenge ID required' },
+        { status: 400 }
+      )
+    }
+
+    const challengeIndex = challenges.findIndex(c => c.id === id)
+    
+    if (challengeIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: 'Challenge not found' },
+        { status: 404 }
+      )
+    }
+
+    // Update challenge
+    challenges[challengeIndex] = {
+      ...challenges[challengeIndex],
+      ...updateData,
+      prizing: updateData.prizing?.filter((p: string) => p.trim() !== '') || challenges[challengeIndex].prizing,
+      deliverables: updateData.deliverables?.filter((d: string) => d.trim() !== '') || challenges[challengeIndex].deliverables,
+      attachments: updateData.attachments?.filter((a: string) => a.trim() !== '') || challenges[challengeIndex].attachments
+    }
+
+    return NextResponse.json({
+      success: true,
+      challenge: challenges[challengeIndex]
+    })
+  } catch (error) {
+    console.error('Failed to update challenge:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to update challenge' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Delete challenge (Admin only)
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.email || !isAdmin(session.user.email)) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Challenge ID required' },
+        { status: 400 }
+      )
+    }
+
+    const challengeIndex = challenges.findIndex(c => c.id === id)
+    
+    if (challengeIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: 'Challenge not found' },
+        { status: 404 }
+      )
+    }
+
+    // Remove challenge
+    const deletedChallenge = challenges.splice(challengeIndex, 1)[0]
+
+    return NextResponse.json({
+      success: true,
+      challenge: deletedChallenge
+    })
+  } catch (error) {
+    console.error('Failed to delete challenge:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete challenge' },
+      { status: 500 }
+    )
+  }
+}

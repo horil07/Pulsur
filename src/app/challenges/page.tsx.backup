@@ -1,0 +1,299 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { Search, Filter, Trophy, Calendar, Users, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+interface Challenge {
+  id: string
+  title: string
+  description: string
+  image: string
+  topPrize: string
+  status: 'OPEN' | 'CLOSED' | 'ANNOUNCED'
+  participants: number
+  endDate: string
+  category: string
+}
+
+// Mock data removed - now using API data
+
+export default function ChallengesPage() {
+  {
+    id: '1',
+    title: 'Night Rider Challenge',
+    description: 'Create stunning content showcasing the thrill of night rides with your unique style',
+    image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400',
+    topPrize: '$2,500',
+    status: 'OPEN',
+    participants: 234,
+    endDate: '2024-12-31',
+    category: 'Night Riding'
+  },
+  {
+    id: '2',
+    title: 'Helmet Design Contest',
+    description: 'Design the next generation of smart motorcycle helmets',
+    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400',
+    topPrize: '$1,800',
+    status: 'OPEN',
+    participants: 156,
+    endDate: '2024-12-25',
+    category: 'Helmet Design'
+  },
+  {
+    id: '3',
+    title: 'Pulsar Customization',
+    description: 'Show off your custom Pulsar modifications and upgrades',
+    image: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=400',
+    topPrize: '$3,000',
+    status: 'ANNOUNCED',
+    participants: 0,
+    endDate: '2025-01-15',
+    category: 'Bike Mods'
+  },
+  {
+    id: '4',
+    title: 'Riding Gear Style',
+    description: 'Showcase the latest trends in motorcycle riding gear and fashion',
+    image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400',
+    topPrize: '$1,200',
+    status: 'CLOSED',
+    participants: 89,
+    endDate: '2024-11-30',
+    category: 'Gear & Fashion'
+  },
+  {
+    id: '5',
+    title: 'Ride Stories',
+    description: 'Share your most memorable riding experiences and adventures',
+    image: 'https://images.unsplash.com/photo-1549399683-31fb9cd20639?w=400',
+    topPrize: '$800',
+    status: 'OPEN',
+    participants: 167,
+    endDate: '2024-12-20',
+    category: 'Stories'
+  },
+  {
+    id: '6',
+    title: 'Speed Chronicles',
+    description: 'Capture the adrenaline of high-speed riding through video content',
+    image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=400',
+    topPrize: '$1,500',
+    status: 'ANNOUNCED',
+    participants: 0,
+    endDate: '2025-02-01',
+    category: 'Video Content'
+  }
+]
+
+export default function ChallengesPage() {
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [activeTab, setActiveTab] = useState('ALL')
+  const [filteredChallenges, setFilteredChallenges] = useState<Challenge[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Load challenges from API
+  useEffect(() => {
+    const loadChallenges = async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams()
+        if (activeTab !== 'ALL') params.append('status', activeTab)
+        if (searchTerm) params.append('search', searchTerm)
+        
+        const response = await fetch(`/api/challenges?${params}`)
+        const data = await response.json()
+        
+        if (data.success) {
+          setFilteredChallenges(data.challenges)
+        }
+      } catch (error) {
+        console.error('Failed to load challenges:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadChallenges()
+  }, [searchTerm, activeTab])
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'OPEN':
+        return 'bg-green-500/20 text-green-300 border-green-500/30'
+      case 'CLOSED':
+        return 'bg-red-500/20 text-red-300 border-red-500/30'
+      case 'ANNOUNCED':
+        return 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+      default:
+        return 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+    }
+  }
+
+  const handleViewChallenge = (challengeId: string) => {
+    router.push(`/challenges/${challengeId}`)
+  }
+
+  const formatParticipants = (count: number) => {
+    if (count === 0) return 'No participants yet'
+    if (count === 1) return '1 participant'
+    return `${count} participants`
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0A0A0A] to-[#1A1A1A]">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 neon-text-pink">
+            Challenges
+          </h1>
+          <p className="text-xl text-white max-w-2xl mx-auto">
+            Join exciting challenges and compete with creators worldwide
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="SEARCH CHALLENGES"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 pr-4 py-4 w-full bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-[#FF006F]/50 focus:border-[#FF006F]/50 glass-panel text-lg"
+            />
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
+          <TabsList className="grid w-full grid-cols-4 max-w-md mx-auto bg-black/50 glass-panel">
+            <TabsTrigger 
+              value="ALL" 
+              className="data-[state=active]:bg-[#FF006F]/20 data-[state=active]:text-[#FF006F] data-[state=active]:neon-glow-pink"
+            >
+              ALL
+            </TabsTrigger>
+            <TabsTrigger 
+              value="OPEN"
+              className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-300"
+            >
+              OPEN
+            </TabsTrigger>
+            <TabsTrigger 
+              value="CLOSED"
+              className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-300"
+            >
+              CLOSED
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ANNOUNCED"
+              className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300"
+            >
+              ANNOUNCED
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="mt-8">
+            {/* Challenge Grid */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <Card key={index} className="glass-panel cyber-shadow animate-pulse">
+                    <div className="w-full h-48 bg-gray-600/20 rounded-t-lg"></div>
+                    <CardHeader className="pb-3">
+                      <div className="h-6 bg-gray-600/20 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-600/20 rounded w-3/4"></div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="h-4 bg-gray-600/20 rounded mb-4"></div>
+                      <div className="h-10 bg-gray-600/20 rounded"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredChallenges.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredChallenges.map((challenge) => (
+                  <Card key={challenge.id} className="glass-panel cyber-shadow hover:scale-105 transition-transform duration-300">
+                    <div className="relative">
+                      <Image 
+                        src={challenge.image} 
+                        alt={challenge.title}
+                        width={400}
+                        height={192}
+                        className="w-full h-48 object-cover rounded-t-lg"
+                        unoptimized
+                      />
+                      <Badge 
+                        className={`absolute top-3 right-3 ${getStatusColor(challenge.status)} border`}
+                      >
+                        {challenge.status}
+                      </Badge>
+                    </div>
+                    
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <CardTitle className="text-white text-xl font-bold">
+                          {challenge.title}
+                        </CardTitle>
+                        <div className="flex items-center text-[#00E5FF] text-sm">
+                          <Trophy className="w-4 h-4 mr-1" />
+                          {challenge.topPrize}
+                        </div>
+                      </div>
+                      <CardDescription className="text-white text-sm line-clamp-2">
+                        {challenge.description}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="pt-0">
+                      <div className="flex items-center justify-between mb-4 text-sm text-white">
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 mr-1" />
+                          {formatParticipants(challenge.participants)}
+                        </div>
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-1" />
+                          {new Date(challenge.endDate).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <Button 
+                        className="w-full cyber-button group"
+                        onClick={() => handleViewChallenge(challenge.id)}
+                      >
+                        VIEW IT
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="glass-panel text-center py-16 cyber-shadow">
+                <CardContent>
+                  <Filter className="w-16 h-16 text-white mx-auto mb-4" />
+                  <CardTitle className="text-white mb-2">No challenges found</CardTitle>
+                  <CardDescription className="text-white mb-6">
+                    {searchTerm ? 'Try different search terms' : `No ${activeTab.toLowerCase()} challenges available`}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
